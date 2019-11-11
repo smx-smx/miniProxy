@@ -152,11 +152,21 @@ function makeRequest($url) {
       //More info here: http://stackoverflow.com/questions/8899239/http-raw-post-data-not-being-populated-after-upgrade-to-php-5-3
       //If the miniProxyFormAction field appears in the POST data, remove it so the destination server doesn't receive it.
       $postData = Array();
-      parse_str(file_get_contents("php://input"), $postData);
-      if (isset($postData["miniProxyFormAction"])) {
-        unset($postData["miniProxyFormAction"]);
+      $postStr = file_get_contents("php://input");
+      $contentType = $browserRequestHeaders['Content-Type'];
+      switch($contentType){
+        case 'application/json':
+          $postFields = $postStr;
+          break;
+        default:
+          parse_str($postStr, $postData);
+          if (isset($postData["miniProxyFormAction"])) {
+            unset($postData["miniProxyFormAction"]);
+          }
+          $postFields = http_build_query($postData);
+          break;
       }
-      curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($postData));
+      curl_setopt($ch, CURLOPT_POSTFIELDS, $postFields);
     break;
     case "PUT":
       curl_setopt($ch, CURLOPT_PUT, true);
